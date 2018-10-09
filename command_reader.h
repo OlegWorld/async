@@ -19,7 +19,7 @@ public:
 
     ~CommandReader() = default;
 
-    void scan_input(std::string&& data);
+    void scan_input(const std::string& data);
 
     void subscribe(AbstractObserver* obs);
 
@@ -64,9 +64,13 @@ public:
     void read_commands(CommandReader* reader) override;
 
 private:
+    void push_current_bulk(CommandReader* reader);
+
+private:
     const size_t m_command_pack_size;
     std::istream& m_input;
     CommandBulk* m_current;
+    size_t m_current_size;
 };
 
 class BracedState : public ReaderState {
