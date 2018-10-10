@@ -33,12 +33,6 @@ void CommandReader::push_bulk(CommandBulk* b) {
     recycle_data();
 }
 
-//void CommandReader::stop(CommandBulk* b) {
-//    push_bulk(b);
-//    for (auto& obs : m_observers)
-//        obs->stop();
-//}
-
 void CommandReader::switch_state() {
     std::swap(m_current_state, m_other_state);
     m_current_state->read_commands(this);
@@ -80,6 +74,10 @@ void NormalState::read_commands(CommandReader* reader) {
             m_current = reader->new_bulk();
         }
 
+        if (name.empty()) {
+            continue;
+        }
+
         if (name == "{") {
             open_brace(reader);
             break;
@@ -118,19 +116,15 @@ void BracedState::close_brace(CommandReader* reader) {
 }
 
 void BracedState::read_commands(CommandReader* reader) {
-    m_brace_counter++;
-
     if (!m_current) {
         m_current = reader->new_bulk();
     }
 
     command_name_t name;
     while(std::getline(m_input, name)) {
-//        if (name.empty()) {
-//            m_current->clear();
-//            reader->stop(m_current);
-//            return;
-//        }
+        if (name.empty()) {
+            continue;
+        }
 
         if (name == "{") {
             m_brace_counter++;
@@ -138,9 +132,11 @@ void BracedState::read_commands(CommandReader* reader) {
         }
 
         if (name == "}") {
-            if (!--m_brace_counter) {
+            if (!m_brace_counter) {
                 close_brace(reader);
                 break;
+            } else {
+                --m_brace_counter;
             }
 
             continue;

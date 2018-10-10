@@ -3,9 +3,9 @@
 #include <sstream>
 #include <experimental/filesystem>
 #include <gtest/gtest.h>
-#include "command_handler.h"
+#include "async.h"
 
-TEST(BulkMTTest, CommandBulkTest) {
+TEST(AsyncTest, CommandBulkTest) {
     CommandBulk b;
     EXPECT_TRUE(b.empty());
     EXPECT_FALSE(b.recyclable());
@@ -27,7 +27,7 @@ TEST(BulkMTTest, CommandBulkTest) {
     EXPECT_TRUE(b.recyclable());
 }
 
-TEST(BulkMTTest, ReaderNormalSingleTest) {
+TEST(AsyncTest, ReaderNormalSingleTest) {
     std::list<CommandBulk> data;
     const std::string inputString("command1\ncommand2\n");
     CommandReader reader(data, 1);
@@ -54,7 +54,7 @@ TEST(BulkMTTest, ReaderNormalSingleTest) {
     EXPECT_TRUE(data.empty());
 }
 
-TEST(BulkMTTest, ReaderNormalDoubleTest) {
+TEST(AsyncTest, ReaderNormalDoubleTest) {
     std::list<CommandBulk> data;
     std::string inputString("command1\ncommand2\ncommand3\n");
     CommandReader reader(data, 2);
@@ -94,7 +94,7 @@ TEST(BulkMTTest, ReaderNormalDoubleTest) {
     EXPECT_TRUE(data.empty());
 }
 
-TEST(BulkMTTest, ReaderSwitchDoubleTest) {
+TEST(AsyncTest, ReaderSwitchDoubleTest) {
     std::list<CommandBulk> data;
     std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
     CommandReader reader(data, 2);
@@ -142,7 +142,7 @@ TEST(BulkMTTest, ReaderSwitchDoubleTest) {
     EXPECT_TRUE(data.empty());
 }
 
-TEST(BulkMTTest, ReaderProcessorSwitchDoubleTest) {
+TEST(AsyncTest, ReaderProcessorSwitchDoubleTest) {
     std::list<CommandBulk> data;
     const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
     CommandProcessor processor;
@@ -158,7 +158,7 @@ TEST(BulkMTTest, ReaderProcessorSwitchDoubleTest) {
     processor.stop();
 }
 
-TEST(BulkMTTest, ReaderSingleLogSwitchDoubleTest) {
+TEST(AsyncTest, ReaderSingleLogSwitchDoubleTest) {
     namespace fs = std::experimental::filesystem;
 
     fs::remove_all("log");
@@ -182,7 +182,7 @@ TEST(BulkMTTest, ReaderSingleLogSwitchDoubleTest) {
     log.stop();
 }
 
-TEST(BulkMTTest, ReaderDoubleLogSwitchDoubleTest) {
+TEST(AsyncTest, ReaderDoubleLogSwitchDoubleTest) {
     namespace fs = std::experimental::filesystem;
     fs::remove_all("log");
 
@@ -205,7 +205,7 @@ TEST(BulkMTTest, ReaderDoubleLogSwitchDoubleTest) {
     log.stop();
 }
 
-TEST(BulkMTTest, CommandHandlerTest) {
+TEST(AsyncTest, CommandHandlerTest) {
     namespace fs = std::experimental::filesystem;
     fs::remove_all("log");
 
@@ -223,6 +223,36 @@ TEST(BulkMTTest, CommandHandlerTest) {
                              "bulk: command4, command5, command6\n";
 
     EXPECT_EQ(output, ref_output);
+
+    size_t counter = 0;
+    for (const auto & p : fs::directory_iterator(fs::current_path())) {
+        counter++;
+    }
+
+    EXPECT_EQ(counter, 3);
+}
+
+TEST(AsyncTest, MultipleHandlerTest) {
+    namespace fs = std::experimental::filesystem;
+    fs::remove_all("log");
+
+    std::size_t bulk = 5;
+    auto h = async::connect(bulk);
+    auto h2 = async::connect(bulk);
+
+    testing::internal::CaptureStdout();
+    async::receive(h, "1", 1);
+    async::receive(h2, "1\n", 2);
+    async::receive(h, "\n2\n3\n4\n5\n6\n{\na\n", 15);
+    async::receive(h, "b\nc\nd\n}\n89\n", 11);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::string output = testing::internal::GetCapturedStdout();
+    std::string ref_output = "bulk: 1, 2, 3, 4, 5\n"
+                             "bulk: 6\n"
+                             "bulk: a, b, c, d\n";
+    EXPECT_EQ(output, ref_output);
+    async::disconnect(h);
+    async::disconnect(h2);
 
     size_t counter = 0;
     for (const auto & p : fs::directory_iterator(fs::current_path())) {
