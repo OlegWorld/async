@@ -1,0 +1,24 @@
+language: cpp
+before_script:
+- sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+- sudo apt-get update
+- sudo apt-get install g++-7 -y
+- cd /usr/bin
+- sudo rm g++
+- sudo ln g++-7 g++
+- sudo apt-get install libgtest-dev -y
+- cd /usr/src/gtest
+- sudo env "PATH=$PATH" cmake CMakeLists.txt
+- sudo make
+- sudo cp *.a /usr/lib
+- cd "${TRAVIS_BUILD_DIR}"
+script:
+- cmake .
+- cmake --build .
+- ctest . --verbose
+- cmake --build . --target package
+deploy:
+- provider: script
+  skip_cleanup: true
+  script:
+  - curl -T async-0.1.$TRAVIS_BUILD_NUMBER-Linux.deb -uolegworld:$BINTRAY_API_KEY "https://api.bintray.com/content/olegworld/Otus_Homework/async/$TRAVIS_BUILD_NUMBER/async-0.1.$TRAVIS_BUILD_NUMBER-Linux.deb;deb_distribution=trusty;deb_component=main;deb_architecture=amd64;publish=1"
