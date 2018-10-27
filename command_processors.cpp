@@ -5,9 +5,13 @@
 CommandProcessor::CommandProcessor()
 :   m_loaded(false),
     m_stop_flag(false),
-    m_thread(&CommandProcessor::run, this),
     m_guard(m_thread)
-{ }
+{
+    try { m_thread = std::thread(&CommandProcessor::run, this); }
+    catch(...) {
+        std::cerr << "Error launching thread" << std::endl;
+    }
+}
 
 bool CommandProcessor::ready() const noexcept {
     return m_loaded;
@@ -59,9 +63,13 @@ CommandMultipleLog::LogWriter::LogWriter(CommandMultipleLog& parent)
 :   m_parent(parent),
     m_loaded(false),
     m_stop_flag(false),
-    m_thread(&LogWriter::run, this),
     m_guard(m_thread)
-{ }
+{
+    try { m_thread = std::thread(&LogWriter::run, this); }
+    catch(...) {
+        std::cerr << "Error launching thread" << std::endl;
+    }
+}
 
 bool CommandMultipleLog::LogWriter::ready() const noexcept {
     return m_loaded;
