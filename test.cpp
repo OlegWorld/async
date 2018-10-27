@@ -143,125 +143,125 @@ TEST(AsyncTest, ReaderSwitchDoubleTest) {
     EXPECT_TRUE(data.empty());
 }
 
-TEST(AsyncTest, ReaderProcessorSwitchDoubleTest) {
-    std::list<CommandBulk> data;
-    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
-    CommandProcessor processor;
-    CommandReader reader(data, 2);
-    reader.subscribe(&processor);
-
-    while(!processor.ready());
-    testing::internal::CaptureStdout();
-    reader.scan_input(inputString);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    std::string output = testing::internal::GetCapturedStdout();
-    EXPECT_EQ(output, "bulk: command1, command2\nbulk: command3\nbulk: command4, command5, command6\n");
-    processor.stop();
-}
-
-TEST(AsyncTest, ReaderSingleLogSwitchDoubleTest) {
-    namespace fs = std::experimental::filesystem;
-
-    fs::remove_all("log");
-
-    std::list<CommandBulk> data;
-    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
-    CommandMultipleLog log(1);
-    CommandReader reader(data, 2);
-    reader.subscribe(&log);
-
-    while(!log.ready());
-    reader.scan_input(inputString);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    size_t counter = 0;
-    for (const auto & p : fs::directory_iterator(fs::current_path())) {
-        counter++;
-    }
-
-    EXPECT_EQ(counter, 3);
-    log.stop();
-}
-
-TEST(AsyncTest, ReaderDoubleLogSwitchDoubleTest) {
-    namespace fs = std::experimental::filesystem;
-    fs::remove_all("log");
-
-    std::list<CommandBulk> data;
-    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
-    CommandMultipleLog log(2);
-    CommandReader reader(data, 2);
-    reader.subscribe(&log);
-
-    while(!log.ready());
-    reader.scan_input(inputString);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    size_t counter = 0;
-    for (const auto & p : fs::directory_iterator(fs::current_path())) {
-        counter++;
-    }
-
-    EXPECT_EQ(counter, 3);
-    log.stop();
-}
-
-TEST(AsyncTest, CommandHandlerTest) {
-    namespace fs = std::experimental::filesystem;
-    fs::remove_all("log");
-
-    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
-
-    CommandHandler handler(2, 1);
-
-    testing::internal::CaptureStdout();
-    handler.read(inputString);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    std::string output = testing::internal::GetCapturedStdout();
-
-    std::string ref_output = "bulk: command1, command2\n"
-                             "bulk: command3\n"
-                             "bulk: command4, command5, command6\n";
-
-    EXPECT_EQ(output, ref_output);
-
-    size_t counter = 0;
-    for (const auto & p : fs::directory_iterator(fs::current_path())) {
-        counter++;
-    }
-
-    EXPECT_EQ(counter, 3);
-}
-
-TEST(AsyncTest, MultipleHandlerTest) {
-    namespace fs = std::experimental::filesystem;
-    fs::remove_all("log");
-
-    std::size_t bulk = 5;
-    auto h = async::connect(bulk);
-    auto h2 = async::connect(bulk);
-
-    testing::internal::CaptureStdout();
-    async::receive(h, "1", 1);
-    async::receive(h2, "1\n", 2);
-    async::receive(h, "\n2\n3\n4\n5\n6\n{\na\n", 15);
-    async::receive(h, "b\nc\nd\n}\n89\n", 11);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    std::string output = testing::internal::GetCapturedStdout();
-    std::string ref_output = "bulk: 1, 2, 3, 4, 5\n"
-                             "bulk: 6\n"
-                             "bulk: a, b, c, d\n";
-    EXPECT_EQ(output, ref_output);
-    async::disconnect(h);
-    async::disconnect(h2);
-
-    size_t counter = 0;
-    for (const auto & p : fs::directory_iterator(fs::current_path())) {
-        counter++;
-    }
-
-    EXPECT_EQ(counter, 3);
-}
+//TEST(AsyncTest, ReaderProcessorSwitchDoubleTest) {
+//    std::list<CommandBulk> data;
+//    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
+//    CommandProcessor processor;
+//    CommandReader reader(data, 2);
+//    reader.subscribe(&processor);
+//
+//    while(!processor.ready());
+//    testing::internal::CaptureStdout();
+//    reader.scan_input(inputString);
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//    std::string output = testing::internal::GetCapturedStdout();
+//    EXPECT_EQ(output, "bulk: command1, command2\nbulk: command3\nbulk: command4, command5, command6\n");
+//    processor.stop();
+//}
+//
+//TEST(AsyncTest, ReaderSingleLogSwitchDoubleTest) {
+//    namespace fs = std::experimental::filesystem;
+//
+//    fs::remove_all("log");
+//
+//    std::list<CommandBulk> data;
+//    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
+//    CommandMultipleLog log(1);
+//    CommandReader reader(data, 2);
+//    reader.subscribe(&log);
+//
+//    while(!log.ready());
+//    reader.scan_input(inputString);
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//
+//    size_t counter = 0;
+//    for (const auto & p : fs::directory_iterator(fs::current_path())) {
+//        counter++;
+//    }
+//
+//    EXPECT_EQ(counter, 3);
+//    log.stop();
+//}
+//
+//TEST(AsyncTest, ReaderDoubleLogSwitchDoubleTest) {
+//    namespace fs = std::experimental::filesystem;
+//    fs::remove_all("log");
+//
+//    std::list<CommandBulk> data;
+//    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
+//    CommandMultipleLog log(2);
+//    CommandReader reader(data, 2);
+//    reader.subscribe(&log);
+//
+//    while(!log.ready());
+//    reader.scan_input(inputString);
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//
+//    size_t counter = 0;
+//    for (const auto & p : fs::directory_iterator(fs::current_path())) {
+//        counter++;
+//    }
+//
+//    EXPECT_EQ(counter, 3);
+//    log.stop();
+//}
+//
+//TEST(AsyncTest, CommandHandlerTest) {
+//    namespace fs = std::experimental::filesystem;
+//    fs::remove_all("log");
+//
+//    const std::string inputString("command1\ncommand2\ncommand3\n{\ncommand4\ncommand5\ncommand6\n}\ncommand7\n");
+//
+//    CommandHandler handler(2, 1);
+//
+//    testing::internal::CaptureStdout();
+//    handler.read(inputString);
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//    std::string output = testing::internal::GetCapturedStdout();
+//
+//    std::string ref_output = "bulk: command1, command2\n"
+//                             "bulk: command3\n"
+//                             "bulk: command4, command5, command6\n";
+//
+//    EXPECT_EQ(output, ref_output);
+//
+//    size_t counter = 0;
+//    for (const auto & p : fs::directory_iterator(fs::current_path())) {
+//        counter++;
+//    }
+//
+//    EXPECT_EQ(counter, 3);
+//}
+//
+//TEST(AsyncTest, MultipleHandlerTest) {
+//    namespace fs = std::experimental::filesystem;
+//    fs::remove_all("log");
+//
+//    std::size_t bulk = 5;
+//    auto h = async::connect(bulk);
+//    auto h2 = async::connect(bulk);
+//
+//    testing::internal::CaptureStdout();
+//    async::receive(h, "1", 1);
+//    async::receive(h2, "1\n", 2);
+//    async::receive(h, "\n2\n3\n4\n5\n6\n{\na\n", 15);
+//    async::receive(h, "b\nc\nd\n}\n89\n", 11);
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//    std::string output = testing::internal::GetCapturedStdout();
+//    std::string ref_output = "bulk: 1, 2, 3, 4, 5\n"
+//                             "bulk: 6\n"
+//                             "bulk: a, b, c, d\n";
+//    EXPECT_EQ(output, ref_output);
+//    async::disconnect(h);
+//    async::disconnect(h2);
+//
+//    size_t counter = 0;
+//    for (const auto & p : fs::directory_iterator(fs::current_path())) {
+//        counter++;
+//    }
+//
+//    EXPECT_EQ(counter, 3);
+//}
 
 int main(int argc, char **argv)
 {
