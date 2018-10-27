@@ -7,9 +7,6 @@ CommandHandler::CommandHandler(size_t commandPackSize,
 {
     m_reader.subscribe(&m_processor);
     m_reader.subscribe(&m_log);
-
-    while(!m_processor.ready());
-    while(!m_log.ready());
 }
 
 CommandHandler::~CommandHandler() {

@@ -15,7 +15,7 @@ void CommandReader::scan_input(const std::string& data) {
 }
 
 void CommandReader::subscribe(AbstractObserver* obs) {
-    m_observers.push_back(obs);
+    m_observers.emplace_back(obs);
 }
 
 void CommandReader::push_bulk(CommandBulk* b) {

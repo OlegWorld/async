@@ -55,7 +55,7 @@ class CommandMultipleLog : public AbstractObserver {
         void finalize();
 
     private:
-        void create_log_file();
+        void create_log_file(std::queue<CommandBulk*>&& q);
 
     private:
         CommandMultipleLog& m_parent;

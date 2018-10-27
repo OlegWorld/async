@@ -24,10 +24,12 @@ void CommandProcessor::run() {
         }
 
         m_cv.wait(lck);
-        while (!m_commands.empty()) {
-            CommandBulk* b = m_commands.front();
+        auto local_q = std::move(m_commands);
+        lck.unlock();
+        while (!local_q.empty()) {
+            CommandBulk* b = local_q.front();
             std::cout << *b;
-            m_commands.pop();
+            local_q.pop();
         }
     }
 }
@@ -76,7 +78,9 @@ void CommandMultipleLog::LogWriter::run() {
         }
 
         m_parent.m_cv.wait(lck);
-        create_log_file();
+        auto local_q = std::move(m_parent.m_commands);
+        lck.unlock();
+        create_log_file(std::move(local_q));
     }
 }
 
@@ -89,13 +93,13 @@ void CommandMultipleLog::LogWriter::finalize() {
         m_thread.join();
 }
 
-void CommandMultipleLog::LogWriter::create_log_file() {
+void CommandMultipleLog::LogWriter::create_log_file(std::queue<CommandBulk*>&& q) {
     using std::to_string;
     using std::chrono::duration_cast;
     using std::chrono::seconds;
 
-    while (!m_parent.m_commands.empty()) {
-        CommandBulk* b = m_parent.m_commands.front();
+    while (!q.empty()) {
+        CommandBulk* b = q.front();
         auto tp = std::chrono::system_clock::now();
         std::ofstream of("bulk_" +
                          to_string(duration_cast<seconds>(tp.time_since_epoch()).count()) + '_' +
@@ -104,7 +108,7 @@ void CommandMultipleLog::LogWriter::create_log_file() {
         of << *b;
         of.close();
 
-        m_parent.m_commands.pop();
+        q.pop();
     }
 }
 

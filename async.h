@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include "command_handler.h"
+class CommandHandler;
 
 namespace async {
 

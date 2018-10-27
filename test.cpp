@@ -4,6 +4,7 @@
 #include <experimental/filesystem>
 #include <gtest/gtest.h>
 #include "async.h"
+#include "command_handler.h"
 
 TEST(AsyncTest, CommandBulkTest) {
     CommandBulk b;

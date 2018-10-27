@@ -12,6 +12,12 @@ class ReaderState;
 class NormalState;
 class BracedState;
 
+template <class T>
+struct Deleter {
+    Deleter() = default;
+    void operator()(T*) const { }
+};
+
 class CommandReader {
 public:
     CommandReader(std::list<CommandBulk>& data,
@@ -24,8 +30,6 @@ public:
     void subscribe(AbstractObserver* obs);
 
     void push_bulk(CommandBulk* name);
-
-    //void stop(CommandBulk* name);
 
     void switch_state();
 
@@ -40,7 +44,7 @@ private:
     std::list<CommandBulk>& m_data;
     std::unique_ptr<ReaderState> m_current_state;
     std::unique_ptr<ReaderState> m_other_state;
-    std::vector<AbstractObserver*> m_observers;
+    std::vector<std::unique_ptr<AbstractObserver, Deleter<AbstractObserver>>> m_observers;
 
     size_t m_line_counter;
     size_t m_command_counter;
